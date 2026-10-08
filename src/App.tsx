@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { Failure, FleetApi, Vehicle } from "./api";
+import type { HistoryApi } from "./historyApi";
 import { LoginView } from "./LoginView";
+import type { TrackMap } from "./trackMap";
+import { VehicleDetailView } from "./VehicleDetailView";
 import { VehicleListView } from "./VehicleListView";
 
 const WRONG_CREDENTIALS = "Anmeldung fehlgeschlagen.";
@@ -21,9 +24,10 @@ function messageFor(failure: Failure, duringLogin: boolean): string {
   return duringLogin ? WRONG_CREDENTIALS : SESSION_ENDED;
 }
 
-export function App(props: { api: FleetApi }) {
+export function App(props: { api: FleetApi; history?: HistoryApi; map?: TrackMap }) {
   const [session, setSession] = useState<Session | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [openVin, setOpenVin] = useState<string | null>(null);
 
   async function onLogin(username: string, password: string) {
     setMessage(null);
@@ -56,10 +60,29 @@ export function App(props: { api: FleetApi }) {
   function onLogout() {
     setSession(null);
     setMessage(null);
+    setOpenVin(null);
+  }
+
+  function onUnauthorized() {
+    setSession(null);
+    setOpenVin(null);
+    setMessage(SESSION_ENDED);
   }
 
   if (session === null) {
     return <LoginView message={message} onSubmit={onLogin} />;
+  }
+  if (openVin !== null && props.history !== undefined && props.map !== undefined) {
+    return (
+      <VehicleDetailView
+        vin={openVin}
+        token={session.token}
+        history={props.history}
+        map={props.map}
+        onBack={() => setOpenVin(null)}
+        onUnauthorized={onUnauthorized}
+      />
+    );
   }
   return (
     <VehicleListView
@@ -67,6 +90,7 @@ export function App(props: { api: FleetApi }) {
       role={session.role}
       vehicles={session.vehicles}
       onLogout={onLogout}
+      onOpen={props.history === undefined ? undefined : setOpenVin}
     />
   );
 }

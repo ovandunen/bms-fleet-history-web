@@ -172,7 +172,7 @@ npm test
 npm run build
 ```
 
-- `npm test` runs Vitest (v5.0.3) with jsdom and React Testing Library. 14 tests: 4 in `src/api.test.ts` (real adapter, stubbed `fetch`), 10 in `src/App.test.tsx` (fake adapter). No network is used.
+- `npm test` runs Vitest (v5.0.3) with jsdom and React Testing Library. 29 tests: 4 in `src/api.test.ts` and 2 in `src/historyApi.test.ts` (real adapter, stubbed `fetch`), 10 in `src/App.test.tsx`, 9 in `src/VehicleDetailView.test.tsx` and 4 in `src/detailSession.test.tsx` (fake adapter). No network is used.
 - `npm run build` runs `tsc --noEmit` and `vite build` (Vite 8.3.3) and writes `dist/`.
 - All other versions are in `package.json`.
 
@@ -196,6 +196,7 @@ npm run build
 5. `JWT_SIGN_KEY` and `JWT_VERIFY_KEY` are not in `docker-compose.yml`. The packaged service does not start in prod mode until they are set.
 6. The login answers faster for an unknown user than for a known one, because bcrypt only runs for known users. That reveals which user names exist.
 7. Grafana embedding and per-fleet limits are D2c. The Grafana database user can read every VIN, and a VIN in a URL is not a security boundary. Do not embed Grafana in this app before that is solved.
+8. The map itself is not unit-tested. jsdom has no WebGL, so the detail tests pass a fake map. Circle radius and the selected-point highlight are best effort.
 
 ## History
 
@@ -262,3 +263,22 @@ Step by step instructions, ports, the dev login and troubleshooting are in the R
 ```
 JAVA_HOME=$(/usr/libexec/java_home -v 21) ./mvnw test
 ```
+
+## Vehicle detail and map
+
+A signed-in user opens a vehicle from the list. That is a third view, chosen by state, with a "Zurück" button back to the list. There is no router and no URL per vehicle.
+
+`FleetApi` is unchanged (`login`, `me`, `vehicles`). Days and track are a separate port, `HistoryApi` in `src/historyApi.ts`. The HTTP adapter implements both. `main.tsx` passes that one object as `api` and as `history`, and passes `MapLibreTrackMap` as `map`. Rows are clickable only when `history` is passed. Tests that render `App` with only `api` stay on the list.
+
+Both calls send `Authorization: Bearer`. The VIN and the day are encoded with `encodeURIComponent`. `maxPoints` is not sent.
+
+- `GET /api/v1/vehicles/{vin}/days` sends `Accept: application/json`. The days method produces JSON only. The list is newest first. The first day is selected and its track loads immediately. An empty list shows "Keine Tagesdaten vorhanden."
+- `GET /api/v1/vehicles/{vin}/days/{day}/track` sends `Accept: application/geo+json`.
+
+The map is MapLibre GL JS 6.13.0. The style constant is `https://tiles.openfreemap.org/styles/liberty` (`OPENFREEMAP_LIBERTY_STYLE` in `src/MapLibreTrackMap.tsx`). No API key. The default attribution control stays visible. On load the map creates one point source (`track-points`) and one line source (`track-line`), their layers, and one click handler. A later day or vehicle calls `setData` on those sources. Unmount calls `map.remove()`, which drops the handler. A removed map ignores a late load.
+
+Clicking a point shows the 16 track properties. Null is "–". Times are shown as received, labelled UTC. Coordinates stay on the map. When `meta.totalPoints` is greater than `meta.returnedPoints`, the view shows "Angezeigt: {returned} von {total} Punkten".
+
+A response for an earlier vehicle or day is ignored. That includes a late 401 after "Zurück": it does not return to the login. A 401 for the current selection drops the token and shows "Bitte erneut anmelden." A 404 shows "Fahrzeug oder Tag nicht gefunden." Any other failure shows "Der Dienst ist nicht erreichbar." and keeps the session.
+
+The detail tests use a fake map. They do not import MapLibre.

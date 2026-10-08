@@ -1,3 +1,6 @@
+import type { HistoryApi } from "./historyApi";
+import { createHistoryApi } from "./historyApi";
+
 export type Vehicle = {
   vin: string;
   fleet: string | null;
@@ -93,7 +96,8 @@ function parseVehicle(value: unknown): Vehicle | null {
   return null;
 }
 
-export function createHttpApi(): FleetApi {
+export function createHttpApi(): FleetApi & HistoryApi {
+  const history = createHistoryApi();
   return {
     async login(username, password) {
       const body = await request("/api/v1/auth/login", {
@@ -144,5 +148,7 @@ export function createHttpApi(): FleetApi {
       }
       return { ok: true, vehicles };
     },
+    days: history.days,
+    track: history.track,
   };
 }

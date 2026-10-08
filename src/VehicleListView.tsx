@@ -5,6 +5,7 @@ export function VehicleListView(props: {
   role: string;
   vehicles: Vehicle[];
   onLogout: () => void;
+  onOpen?: (vin: string) => void;
 }) {
   return (
     <section>
@@ -26,7 +27,15 @@ export function VehicleListView(props: {
           <tbody>
             {props.vehicles.map((vehicle) => (
               <tr key={vehicle.vin}>
-                <td>{vehicle.vin}</td>
+                <td>
+                  {props.onOpen === undefined ? (
+                    vehicle.vin
+                  ) : (
+                    <button type="button" onClick={() => props.onOpen?.(vehicle.vin)}>
+                      {vehicle.vin}
+                    </button>
+                  )}
+                </td>
                 <td>{vehicle.fleet === null ? "nicht zugeordnet" : vehicle.fleet}</td>
               </tr>
             ))}
