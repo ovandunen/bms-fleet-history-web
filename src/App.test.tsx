@@ -92,7 +92,7 @@ it("vehicles_whenFleetIsNull_showsUnassigned", async () => {
     />,
   );
   await submitLogin();
-  expect(await screen.findByText("nicht zugeordnet")).toBeInTheDocument();
+  expect(await screen.findByText("Nicht zugeordnet")).toBeInTheDocument();
   expect(screen.getByText("VIN-1")).toBeInTheDocument();
 });
 

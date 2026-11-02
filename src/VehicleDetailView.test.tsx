@@ -98,7 +98,7 @@ it("notFound_showsMessageAndBackReturnsToList", async () => {
     ),
   );
   expect(await screen.findByText("Fahrzeug oder Tag nicht gefunden.")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Zurück" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" }));
   expect(screen.getByRole("button", { name: "VIN-1" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Fahrzeug VIN-1" })).not.toBeInTheDocument();
 });
@@ -133,7 +133,7 @@ it("unavailable_showsServiceMessageAndKeepsSession", async () => {
     ),
   );
   expect(await screen.findByText("Der Dienst ist nicht erreichbar.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Zurück" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Anmelden" })).not.toBeInTheDocument();
 });
 
@@ -146,7 +146,7 @@ it("back_returnsToVehicleList", async () => {
     }),
   );
   expect(await screen.findByRole("heading", { name: "Fahrzeug VIN-1" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Zurück" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" }));
   expect(screen.getByText("fleet-a")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Abmelden" })).toBeInTheDocument();
 });

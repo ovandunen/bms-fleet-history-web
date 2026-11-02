@@ -154,5 +154,5 @@ export function MapLibreTrackMap(props: TrackMapProps) {
     showTrack(map, props.points, moveCamera);
   }, [props.points]);
 
-  return <div ref={container} style={{ height: "400px" }} />;
+  return <div ref={container} className="track-map" style={{ height: "100%", width: "100%" }} />;
 }

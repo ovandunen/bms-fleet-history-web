@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DayToolbar } from "./DayToolbar";
+import { DetailHeading } from "./DetailHeading";
+import { formatMetric, lastSoc, meanMovingSpeed, movingSpeeds, socSeries, trackSpan } from "./daySeries";
 import type { HistoryApi, Track, VehicleDay } from "./historyApi";
-import { downsampleNote, formatPointValue, POINT_FIELDS } from "./pointText";
+import { Icon } from "./icons";
+import { KpiGrid } from "./KpiGrid";
+import { PointReadout } from "./PointReadout";
+import { downsampleNote } from "./pointText";
+import { StatusBanner } from "./StatusBanner";
+import { TrackAnalytics } from "./TrackAnalytics";
 import type { TrackMap } from "./trackMap";
-
-const LOADING = "Lade Daten…";
-const NO_DAYS = "Keine Tagesdaten vorhanden.";
-const NOT_FOUND = "Fahrzeug oder Tag nicht gefunden.";
-const UNAVAILABLE = "Der Dienst ist nicht erreichbar.";
 
 export function VehicleDetailView(props: {
   vin: string;
@@ -76,10 +79,7 @@ export function VehicleDetailView(props: {
     setStatus(failure === "notFound" ? "missing" : "error");
   }
 
-  function applyTrack(
-    loaded: Awaited<ReturnType<HistoryApi["track"]>>,
-    id: number,
-  ) {
+  function applyTrack(loaded: Awaited<ReturnType<HistoryApi["track"]>>, id: number) {
     if (id !== generation.current) {
       return;
     }
@@ -103,7 +103,6 @@ export function VehicleDetailView(props: {
     });
   }
 
-  const MapView = props.map;
   const mapPoints = useMemo(
     () =>
       (track?.points ?? []).map((point, index) => ({
@@ -113,43 +112,49 @@ export function VehicleDetailView(props: {
       })),
     [track, selected],
   );
+  const speeds = track === null ? [] : movingSpeeds(track.points);
+  const charges = track === null ? [] : socSeries(track.points);
+  const soc = track === null ? null : lastSoc(track.points);
+  const mean = track === null ? null : meanMovingSpeed(track.points);
+  const span = track === null ? null : trackSpan(track.points);
   const note = track === null ? null : downsampleNote(track.meta.totalPoints, track.meta.returnedPoints);
   const chosen = selected !== null && track !== null ? track.points[selected] : null;
+  const speedText = mean === null ? "—" : formatMetric(mean, 1);
+  const socText = soc === null ? "—" : formatMetric(soc, Number.isInteger(soc) ? 0 : 1);
 
   return (
-    <section>
-      <h1>Fahrzeug {props.vin}</h1>
-      <button type="button" onClick={props.onBack}>
-        Zurück
+    <section className="detail-content">
+      <button type="button" className="back-link" onClick={props.onBack}>
+        <Icon name="arrow-left" size={16} /> Zurück zur Fahrzeugliste
       </button>
-      {status === "loading" ? <p>{LOADING}</p> : null}
-      {status === "empty" ? <p>{NO_DAYS}</p> : null}
-      {status === "missing" ? <p>{NOT_FOUND}</p> : null}
-      {status === "error" ? <p>{UNAVAILABLE}</p> : null}
-      {days.length === 0 ? null : (
-        <label>
-          Tag wählen
-          <select value={day ?? ""} onChange={(event) => selectDay(event.target.value)}>
-            {days.map((item) => (
-              <option key={item.day} value={item.day}>
-                {item.day}
-              </option>
-            ))}
-          </select>
-        </label>
+      <DetailHeading vin={props.vin} />
+      {days.length === 0 ? null : <DayToolbar days={days} day={day} onSelect={selectDay} />}
+      {note === null ? null : <p className="track-note">{note}</p>}
+      {status !== "ready" ? (
+        <StatusBanner status={status} />
+      ) : track === null || day === null ? null : (
+        <>
+          <KpiGrid
+            speed={speedText}
+            soc={socText}
+            socFoot={soc === null ? "Noch kein CAN-Test" : "Aktueller SOC"}
+            distanceFoot={span === null ? "Heute" : `Heute · ${span}`}
+          />
+          <TrackAnalytics
+            day={day}
+            speeds={speeds}
+            socs={charges}
+            meanSpeed={speedText}
+            map={props.map}
+            points={mapPoints}
+            onPointClick={setSelected}
+          />
+          {chosen === null || chosen === undefined ? null : <PointReadout point={chosen} />}
+        </>
       )}
-      {note === null ? null : <p>{note}</p>}
-      {day === null ? null : <MapView points={mapPoints} onPointClick={setSelected} />}
-      {chosen === null ? null : (
-        <dl>
-          {POINT_FIELDS.map((field) => (
-            <div key={field.key}>
-              <dt>{field.label}</dt>
-              <dd>{formatPointValue(chosen[field.key])}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      <div className="detail-footnote">
+        <span>Alle Zeitangaben in UTC</span>
+      </div>
     </section>
   );
 }

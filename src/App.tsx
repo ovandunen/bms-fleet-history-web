@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { Failure, FleetApi, Vehicle } from "./api";
+import "./fleet.css";
+import { FleetTopbar } from "./FleetTopbar";
 import type { HistoryApi } from "./historyApi";
 import { LoginView } from "./LoginView";
 import type { TrackMap } from "./trackMap";
@@ -69,28 +71,37 @@ export function App(props: { api: FleetApi; history?: HistoryApi; map?: TrackMap
     setMessage(SESSION_ENDED);
   }
 
+  function closeVehicle() {
+    setOpenVin(null);
+  }
+
   if (session === null) {
     return <LoginView message={message} onSubmit={onLogin} />;
   }
-  if (openVin !== null && props.history !== undefined && props.map !== undefined) {
-    return (
-      <VehicleDetailView
-        vin={openVin}
-        token={session.token}
-        history={props.history}
-        map={props.map}
-        onBack={() => setOpenVin(null)}
-        onUnauthorized={onUnauthorized}
-      />
-    );
-  }
   return (
-    <VehicleListView
-      username={session.username}
-      role={session.role}
-      vehicles={session.vehicles}
-      onLogout={onLogout}
-      onOpen={props.history === undefined ? undefined : setOpenVin}
-    />
+    <main className="volt-page">
+      <FleetTopbar
+        username={session.username}
+        role={session.role}
+        onLogout={onLogout}
+        onFleet={closeVehicle}
+      />
+      {openVin !== null && props.history !== undefined && props.map !== undefined ? (
+        <VehicleDetailView
+          vin={openVin}
+          token={session.token}
+          history={props.history}
+          map={props.map}
+          onBack={closeVehicle}
+          onUnauthorized={onUnauthorized}
+        />
+      ) : (
+        <VehicleListView
+          username={session.username}
+          vehicles={session.vehicles}
+          onOpen={props.history === undefined ? undefined : setOpenVin}
+        />
+      )}
+    </main>
   );
 }

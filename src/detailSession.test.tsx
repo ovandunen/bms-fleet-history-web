@@ -53,7 +53,7 @@ it("lateUnauthorized_afterBack_doesNotLeaveTheList", async () => {
     ),
   );
   expect(await screen.findByRole("heading", { name: "Fahrzeug VIN-1" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Zurück" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" }));
   await act(async () => {
     release({ ok: false, failure: "unauthorized" });
   });
@@ -70,7 +70,7 @@ it("session_afterOpenAndBack_storesNoToken", async () => {
     }),
   );
   expect(await screen.findByRole("heading", { name: "Fahrzeug VIN-1" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Zurück" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" }));
   expect(localStorage.length).toBe(0);
   expect(sessionStorage.length).toBe(0);
   expect(document.cookie).toBe("");
@@ -104,7 +104,7 @@ it("serverErrorAndNetworkError_showServiceMessage", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
   fireEvent.click(await screen.findByRole("button", { name: "VIN-1" }));
   expect(await screen.findByText("Der Dienst ist nicht erreichbar.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Zurück" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Anmelden" })).not.toBeInTheDocument();
   cleanup();
 
@@ -115,6 +115,6 @@ it("serverErrorAndNetworkError_showServiceMessage", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
   fireEvent.click(await screen.findByRole("button", { name: "VIN-1" }));
   expect(await screen.findByText("Der Dienst ist nicht erreichbar.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Zurück" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Zurück zur Fahrzeugliste" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Anmelden" })).not.toBeInTheDocument();
 });
